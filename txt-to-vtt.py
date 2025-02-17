@@ -1,19 +1,41 @@
 import os
+import re
+
+def convert_timestamp(timestamp):
+    """Convert a timestamp in the format [HH:MM:SS] to HH:MM:SS"""
+    return timestamp.strip('[]')
+
+def get_next_timestamp(lines, current_index):
+    """Get the next timestamp from the lines starting from the current index"""
+    for i in range(current_index + 1, len(lines)):
+        match = re.match(r'\[(\d{2}:\d{2}:\d{2})\]', lines[i])
+        if match:
+            return match.group(1)
+    return None
 
 def txt_to_vtt(txt_path, vtt_path):
     with open(txt_path, 'r', encoding='utf-8') as txt_file:
         lines = txt_file.readlines()
     
-    # Skip the first 6 lines of metadata
-    transcript_lines = lines[6:]
-    
     with open(vtt_path, 'w', encoding='utf-8') as vtt_file:
         vtt_file.write("WEBVTT\n\n")
+        
+        # Skip the first 7 lines of metadata and the empty line
+        transcript_lines = lines[8:]
+        
         for i, line in enumerate(transcript_lines):
-            start_time = f"00:00:{i:02d}.000"
-            end_time = f"00:00:{i+1:02d}.000"
-            vtt_file.write(f"{start_time} --> {end_time}\n")
-            vtt_file.write(line.strip() + "\n\n")
+            match = re.match(r'\[(\d{2}:\d{2}:\d{2})\]', line)
+            if match:
+                start_time = match.group(1)
+                next_timestamp = get_next_timestamp(transcript_lines, i)
+                if next_timestamp:
+                    end_time = convert_timestamp(next_timestamp)
+                else:
+                    end_time = "99:59:59"  # Use a large end time for the last segment
+                vtt_file.write(f"{start_time} --> {end_time}\n")
+                vtt_file.write(line[len(match.group(0)):].strip() + "\n\n")
+            else:
+                vtt_file.write(line.strip() + "\n")
 
 def convert_all_txt_to_vtt(input_folder, output_folder):
     if not os.path.exists(output_folder):
