@@ -4,9 +4,12 @@ def txt_to_vtt(txt_path, vtt_path):
     with open(txt_path, 'r', encoding='utf-8') as txt_file:
         lines = txt_file.readlines()
     
+    # Skip the first 6 lines of metadata
+    transcript_lines = lines[6:]
+    
     with open(vtt_path, 'w', encoding='utf-8') as vtt_file:
         vtt_file.write("WEBVTT\n\n")
-        for i, line in enumerate(lines):
+        for i, line in enumerate(transcript_lines):
             start_time = f"00:00:{i:02d}.000"
             end_time = f"00:00:{i+1:02d}.000"
             vtt_file.write(f"{start_time} --> {end_time}\n")
